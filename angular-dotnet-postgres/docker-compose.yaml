@@ -1,0 +1,68 @@
+version: "3"
+services:
+  admin-db:
+    image: postgres
+    container_name: admin-db
+    restart: always
+    ports:
+      - "6850:5432"
+    environment:
+      - POSTGRES_DB=Database_Name
+      - POSTGRES_USER=Admin_Db_User
+      - POSTGRES_PASSWORD=P@ssword!
+    volumes:
+      - ./volumes/databases/postgres/data:/var/lib/postgresql/data
+    networks:
+      - admin
+
+  admin-api:
+    # build: Backends/APIs/Admin/DodiTech.Admin.Api
+    build:
+      context: .
+      dockerfile: ./your/Dockerfile
+    ports:
+      - "8095:5000"
+    volumes:
+      - ./volumes/apps/admin-api/app:/app
+    networks:
+      - admin
+    links:
+      - admin-db
+    depends_on:
+      - admin-db
+    container_name: admin-api
+    restart: always
+
+  admin-pgadmin:
+    container_name: admin-pgadmin
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: exemple@doditech.com
+      PGADMIN_DEFAULT_PASSWORD: StrongP@ssword!
+    volumes:
+     - ./volumes/databases/pgadmin:/var/lib/pgadmin
+    ports:
+      - "9887:80"
+    depends_on:
+      - admin-api
+    links:
+      - admin-db
+
+  admin-ui:
+    build:
+      context: .
+      dockerfile: ./your/frontend/Dockerfile
+    ports:
+      - "9987:80"
+    # volumes:
+    #   - ./Build/Volumes/Admin-UI:/usr/share/nginx/html
+    container_name: admin-ui
+    networks:
+      - admin
+    depends_on:
+      - admin-api
+
+networks:
+  admin:
+    driver: bridge
